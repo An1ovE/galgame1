@@ -3,86 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AVG 角色配置与核心状态机引擎调试面板</title>
+    <title>Sakura Engine - 恋爱冒险数值引擎与迷雾终端</title>
     <style>
+        /* ================= 视觉与 UI 设计规范（二次元粉白樱花风） ================= */
         :root {
-            --bg-color: #0f141c;
-            --panel-bg: #1a2333;
-            --panel-border: #2d3d5a;
-            --accent-color: #83a2f7;
-            --text-color: #e2e8f0;
-            --text-muted: #94a3b8;
-            --success: #4ade80;
-            --danger: #f87171;
-            --warning: #fbbf24;
-            --info: #38bdf8;
+            --sakura-white: #FFFFFF;
+            --sakura-bg-light: #FFF0F5; /* LavenderBlush */
+            --sakura-pink-soft: #FFB7C5; /* Sakura Pink */
+            --sakura-pink-deep: #FF69B4; /* Hot Pink */
+            --sakura-accent: #FF1493; /* Deep Pink */
+            --text-dark: #333333;
+            --text-muted: #666666;
+            --glass-bg: rgba(255, 240, 245, 0.7);
+            --glass-border: rgba(255, 183, 197, 0.4);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 20px;
+            background: linear-gradient(135deg, var(--sakura-white) 0%, var(--sakura-bg-light) 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 樱花背景微弱动画 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(rgba(255, 183, 197, 0.15) 1px, transparent 1px);
+            background-size: 24px 24px;
+            z-index: 0;
+            pointer-events: none;
         }
 
         header {
-            border-bottom: 2px solid var(--panel-border);
-            padding-bottom: 15px;
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1.5px solid var(--sakura-pink-soft);
+            border-radius: 16px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(255, 183, 197, 0.2);
         }
 
         header h1 {
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--accent-color);
+            color: var(--sakura-pink-deep);
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 1px 1px 2px rgba(255, 183, 197, 0.5);
         }
 
         header p {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-muted);
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
-        /* 栅格布局：左侧表单与沙盒，右侧状态面板 */
-        .main-layout {
+        /* 左右分栏布局 */
+        .main-container {
             display: grid;
-            grid-template-columns: 1.2fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 25px;
             flex-grow: 1;
+            z-index: 10;
+            position: relative;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
         }
 
         @media (max-width: 1024px) {
-            .main-layout {
+            .main-container {
                 grid-template-columns: 1fr;
             }
         }
 
-        .panel {
-            background-color: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 8px;
-            padding: 20px;
+        /* 通用卡片容器 (毛玻璃感与樱花边框) */
+        .glass-card {
+            background: var(--glass-bg);
+            border: 2px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(255, 183, 197, 0.15);
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            gap: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .panel-title {
+        .glass-card:hover {
+            box-shadow: 0 12px 40px rgba(255, 183, 197, 0.25);
+        }
+
+        .card-title {
             font-size: 18px;
-            font-weight: bold;
-            border-left: 4px solid var(--accent-color);
-            padding-left: 10px;
-            margin-bottom: 10px;
+            font-weight: 700;
+            color: var(--sakura-accent);
+            border-bottom: 2px dashed var(--sakura-pink-soft);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         /* 表单样式 */
@@ -104,627 +144,601 @@
 
         label {
             font-size: 13px;
-            color: var(--text-muted);
-            font-weight: 500;
+            font-weight: 600;
+            color: var(--text-dark);
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
         }
 
         input[type="text"], input[type="number"], select {
-            background-color: #0f172a;
-            border: 1px solid var(--panel-border);
-            color: var(--text-color);
-            padding: 8px 12px;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1.5px solid var(--sakura-pink-soft);
+            color: var(--text-dark);
+            padding: 10px 14px;
+            border-radius: 12px;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.25s ease;
         }
 
         input[type="text"]:focus, input[type="number"]:focus, select:focus {
-            border-color: var(--accent-color);
+            border-color: var(--sakura-pink-deep);
+            box-shadow: 0 0 8px rgba(255, 105, 180, 0.3);
         }
 
+        /* 自定义单选组 */
         .radio-group {
             display: flex;
-            gap: 15px;
-            height: 38px;
+            gap: 12px;
             align-items: center;
+            min-height: 40px;
         }
 
-        .radio-group label {
-            display: flex;
+        .radio-label {
+            cursor: pointer;
+            display: inline-flex;
             align-items: center;
             gap: 6px;
-            cursor: pointer;
-            color: var(--text-color);
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--sakura-pink-soft);
+            transition: all 0.2s ease;
         }
 
-        .btn {
-            background-color: var(--accent-color);
-            color: #0f141c;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.1s;
-            text-align: center;
+        .radio-label input[type="radio"] {
+            accent-color: var(--sakura-pink-deep);
         }
 
-        .btn:hover {
-            opacity: 0.9;
+        .radio-label:hover {
+            border-color: var(--sakura-pink-deep);
+            background: var(--sakura-bg-light);
         }
 
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-secondary {
-            background-color: transparent;
-            border: 1.5px solid var(--panel-border);
-            color: var(--text-color);
-        }
-
-        .btn-secondary:hover {
-            background-color: rgba(255,255,255,0.05);
-        }
-
-        /* 隐藏兄弟属性选择 */
+        /* 隐藏的条件显示项 */
         .hidden {
             display: none !important;
         }
 
-        /* 剧情显示区 */
-        .story-section {
-            background-color: #0c1017;
-            border: 1px solid #1e293b;
-            border-radius: 6px;
-            padding: 15px;
-            min-height: 120px;
+        /* 浪漫按钮 */
+        .btn-sakura {
+            background: linear-gradient(135deg, var(--sakura-pink-soft) 0%, var(--sakura-pink-deep) 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
             font-size: 15px;
-            line-height: 1.6;
-            white-space: pre-line;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        /* 沙盒控制器 */
-        .sandbox-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed var(--panel-border);
-        }
-
-        .sandbox-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto;
-            gap: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-flex;
             align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
-        /* 数据监视面板样式 */
-        .status-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        .btn-sakura:hover {
+            transform: scale(1.03);
+            background: linear-gradient(135deg, var(--sakura-pink-deep) 0%, var(--sakura-accent) 100%);
+            box-shadow: 0 6px 20px rgba(255, 20, 147, 0.4);
         }
 
-        .profile-summary {
-            background-color: #131b26;
-            border-radius: 6px;
-            padding: 12px;
-            font-size: 13px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
+        .btn-sakura:active {
+            transform: scale(0.97);
         }
 
-        .profile-summary div span {
-            color: var(--text-muted);
+        .btn-sakura-secondary {
+            background: white;
+            color: var(--sakura-pink-deep);
+            border: 1.5px solid var(--sakura-pink-soft);
         }
 
-        /* NPC卡片 */
-        .npc-card {
-            background-color: #131b26;
-            border: 1px solid var(--panel-border);
-            border-radius: 6px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        .btn-sakura-secondary:hover {
+            background: var(--sakura-bg-light);
+            border-color: var(--sakura-pink-deep);
+        }
+
+        /* 日式 AVG 对话框体 */
+        .galgame-box {
+            background: rgba(255, 255, 255, 0.9);
+            border: 3px solid var(--sakura-pink-soft);
+            border-radius: 16px;
+            padding: 20px;
+            min-height: 140px;
             position: relative;
-        }
-
-        .npc-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .npc-name {
-            font-weight: bold;
+            box-shadow: inset 0 0 15px rgba(255, 183, 197, 0.2);
+            line-height: 1.8;
             font-size: 15px;
-        }
-
-        .npc-tags {
+            white-space: pre-line;
             display: flex;
-            gap: 5px;
+            flex-direction: column;
+            justify-content: flex-start;
         }
 
-        .badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 3px;
+        .galgame-speaker {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: var(--sakura-pink-deep);
+            color: white;
+            padding: 3px 15px;
+            border-radius: 12px 12px 0 12px;
+            font-size: 13px;
             font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(255, 105, 180, 0.2);
         }
 
-        .badge-lock { background-color: #7f1d1d; color: #fca5a5; }
-        .badge-warning { background-color: #78350f; color: #fde047; }
-        .badge-info { background-color: #1e3a8a; color: #93c5fd; }
-        .badge-ok { background-color: #064e3b; color: #6ee7b7; }
-
-        .favor-bar-bg {
-            background-color: #0f172a;
-            height: 10px;
-            border-radius: 5px;
-            overflow: hidden;
-            width: 100%;
-            margin-top: 5px;
-        }
-
-        .favor-bar-fill {
-            background: linear-gradient(90deg, #f43f5e, #ec4899);
-            height: 100%;
-            width: 0%;
-            transition: width 0.5s ease-in-out;
-        }
-
-        .npc-details {
-            font-size: 11px;
-            color: var(--text-muted);
+        /* 隐藏迷雾下的好感度表现 */
+        .dossier-card {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid var(--sakura-pink-soft);
+            border-radius: 12px;
+            padding: 12px 16px;
             display: flex;
+            align-items: center;
             justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
         }
 
-        /* 控制台日志 */
-        .console-log {
-            background-color: #090d14;
-            border: 1px solid var(--panel-border);
-            border-radius: 6px;
-            font-family: "Courier New", Courier, monospace;
-            padding: 10px;
-            font-size: 11px;
-            max-height: 180px;
-            overflow-y: auto;
-            flex-grow: 1;
+        .dossier-card:hover {
+            border-color: var(--sakura-pink-deep);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .dossier-info {
             display: flex;
             flex-direction: column;
             gap: 4px;
         }
 
-        .log-entry {
+        .dossier-name {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dossier-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* 迷雾级好感词 */
+        .foggy-favor {
+            color: var(--sakura-pink-deep);
+            font-size: 14px;
+            font-weight: bold;
+            background: var(--sakura-bg-light);
+            padding: 4px 10px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            border: 1px dashed var(--sakura-pink-soft);
+        }
+
+        /* 角色印象日志样式 */
+        .impression-log {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--sakura-pink-soft);
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .impression-item {
+            border-bottom: 1px dashed rgba(255, 183, 197, 0.3);
+            padding-bottom: 6px;
+            transition: color 0.3s ease;
+        }
+
+        .impression-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        /* 沙盒底端测试按钮群 */
+        .sandbox-area {
+            border-top: 1.5px dashed var(--sakura-pink-soft);
+            padding-top: 15px;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sandbox-row {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* 控制台日志面板 */
+        .logger-panel {
+            background: rgba(40, 30, 35, 0.95);
+            border: 1px solid #ffccd7;
+            border-radius: 12px;
+            color: #ffe4e9;
+            font-family: 'Consolas', 'Courier New', monospace;
+            padding: 12px;
+            font-size: 11px;
+            height: 120px;
+            overflow-y: auto;
+            white-space: pre-wrap;
             line-height: 1.4;
         }
-        .log-info { color: var(--info); }
-        .log-success { color: var(--success); }
-        .log-warning { color: var(--warning); }
-        .log-danger { color: var(--danger); }
+
+        .log-warn { color: #ffd166; }
+        .log-success { color: #06d6a0; }
+        .log-info { color: #4ea8de; }
+
+        /* 飘零樱花小特效 */
+        .falling-petal {
+            position: fixed;
+            background-color: var(--sakura-pink-soft);
+            border-radius: 150% 0 150% 50%;
+            opacity: 0.7;
+            pointer-events: none;
+            z-index: 100;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-20px) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(105vh) translateX(100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
 
+    <!-- 顶部标题栏 -->
     <header>
-        <h1>AVG 角色构建与状态机引擎调试面板</h1>
-        <p>游戏程序员后台工具：支持自定义玩家特征导入、实时路由校验、关系锁判定和阶层对流测试</p>
+        <h1>🌸 Sakura Romance Engine 🌸</h1>
+        <p>二次元文字冒险游戏底层测试终端 · 深度数值迷雾系统</p>
     </header>
 
-    <div class="main-layout">
-        
-        <!-- 左侧：输入表单与互动剧情 -->
-        <div class="panel">
-            <div class="panel-title" id="stage-title">步骤一：生成玩家数据结构 (Player Profile)</div>
+    <div class="main-container">
+
+        <!-- 左侧分栏：配置表单 / 经典剧情对话框 -->
+        <div class="glass-card" id="left-panel">
+            <div class="card-title">🌸 玩家基础设定（Player Profile）</div>
             
-            <!-- 玩家生成表单 -->
-            <form id="player-form" onsubmit="event.preventDefault();">
+            <form id="init-form" onsubmit="return false;">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>玩家姓名 (触发隐藏IF线彩蛋)</label>
-                        <input type="text" id="p-name" value="陈林" placeholder="输入姓名，如“致那段终将逝去的时光”">
+                        <label>玩家代号/姓名</label>
+                        <input type="text" id="p_name" value="樱庭" placeholder="若触发彩蛋，将直接转入IF线">
                     </div>
                     <div class="form-group">
-                        <label>玩家年龄</label>
-                        <input type="number" id="p-age" value="18" min="1" max="100">
+                        <label>年龄</label>
+                        <input type="number" id="p_age" value="18" min="1" max="120">
                     </div>
-                    
+
                     <div class="form-group">
-                        <label>性别</label>
+                        <label>生理性别</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="p-gender" value="男" checked> 男</label>
-                            <label><input type="radio" name="p-gender" value="女"> 女</label>
+                            <label class="radio-label"><input type="radio" name="p_gender" value="男" checked> 男</label>
+                            <label class="radio-label"><input type="radio" name="p_gender" value="女"> 女</label>
                         </div>
                     </div>
                     <div class="form-group">
                         <label>眼皮特征</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="p-eyelids" value="单眼皮"> 单眼皮</label>
-                            <label><input type="radio" name="p-eyelids" value="双眼皮" checked> 双眼皮</label>
+                            <label class="radio-label"><input type="radio" name="p_eyelids" value="单眼皮"> 单眼皮</label>
+                            <label class="radio-label"><input type="radio" name="p_eyelids" value="双眼皮" checked> 双眼皮</label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>是否有虎牙</label>
+                        <label>虎牙萌点</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="p-canines" value="true" checked> 有虎牙</label>
-                            <label><input type="radio" name="p-canines" value="false"> 无虎牙</label>
+                            <label class="radio-label"><input type="radio" name="p_canines" value="true"> 有虎牙</label>
+                            <label class="radio-label"><input type="radio" name="p_canines" value="false" checked> 无虎牙</label>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>是否佩戴眼镜</label>
+                        <label>眼镜属性</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="p-glasses" value="true"> 佩戴眼镜</label>
-                            <label><input type="radio" name="p-glasses" value="false" checked> 不戴眼镜</label>
+                            <label class="radio-label"><input type="radio" name="p_glasses" value="true"> 戴眼镜</label>
+                            <label class="radio-label"><input type="radio" name="p_glasses" value="false" checked> 不戴眼镜</label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>发型</label>
+                        <label>发型裁剪</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="p-hair" value="长发"> 长发</label>
-                            <label><input type="radio" name="p-hair" value="短发" checked> 短发</label>
+                            <label class="radio-label"><input type="radio" name="p_hair" value="长发"> 长发</label>
+                            <label class="radio-label"><input type="radio" name="p_hair" value="短发" checked> 短发</label>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>初始家境</label>
-                        <select id="p-wealth">
-                            <option value="poor">poor [家境贫寒]</option>
-                            <option value="working" selected>working [工薪温饱]</option>
-                            <option value="middle">middle [中产小康]</option>
-                            <option value="elite">elite [豪门世家]</option>
+                        <label>初始家门底色</label>
+                        <select id="p_wealth">
+                            <option value="poor">贫寒 [poor]</option>
+                            <option value="working" selected>温饱 [working]</option>
+                            <option value="middle">小康 [middle]</option>
+                            <option value="elite">豪门 [elite]</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label>是否为独生子女</label>
+                        <label>独生家庭</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="p-single" value="true" checked onchange="toggleSiblingUI(true)"> 是</label>
-                            <label><input type="radio" name="p-single" value="false" onchange="toggleSiblingUI(false)"> 否</label>
+                            <label class="radio-label"><input type="radio" name="p_single" value="true" checked onclick="toggleSibling(true)"> 是</label>
+                            <label class="radio-label"><input type="radio" name="p_single" value="false" onclick="toggleSibling(false)"> 否</label>
                         </div>
                     </div>
-                    <div class="form-group hidden" id="sibling-type-group">
-                        <label>兄弟姐妹类型</label>
-                        <select id="p-sibling">
-                            <option value="none" selected>none [无]</option>
-                            <option value="older_sister">older_sister [姐姐]</option>
-                            <option value="younger_sister">younger_sister [妹妹]</option>
-                            <option value="older_brother">older_brother [哥哥]</option>
-                            <option value="younger_brother">younger_brother [弟弟]</option>
+                    <div class="form-group hidden" id="sibling-wrap">
+                        <label>非独生：手足类型</label>
+                        <select id="p_sibling">
+                            <option value="none">无其他手足</option>
+                            <option value="older_sister" selected>姐姐 [older_sister]</option>
+                            <option value="younger_sister">妹妹 [younger_sister]</option>
+                            <option value="older_brother">哥哥 [older_brother]</option>
+                            <option value="younger_brother">弟弟 [younger_brother]</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label>父母离异</label>
+                        <label>家庭完整</label>
                         <div class="radio-group">
-                            <label><input type="radio" name="p-divorced" value="true"> 是</label>
-                            <label><input type="radio" name="p-divorced" value="false" checked> 否</label>
+                            <label class="radio-label"><input type="radio" name="p_divorced" value="true"> 父母离异</label>
+                            <label class="radio-label"><input type="radio" name="p_divorced" value="false" checked> 家庭和睦</label>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>对隐藏背景撒谎</label>
+                        <label>隐私保留</label>
                         <div class="radio-group">
-                            <label><input type="checkbox" id="p-hide-bg"> 剧情中隐藏家庭背景</label>
+                            <label class="radio-label"><input type="checkbox" id="p_hide"> 隐藏身世</label>
                         </div>
                     </div>
                 </div>
-                
-                <button type="button" class="btn" style="width:100%; margin-top:15px;" id="start-btn" onclick="startGame()">开始游戏 (初始化引擎数据)</button>
+
+                <button class="btn-sakura" style="width: 100%; margin-top: 20px;" onclick="engineInit()">
+                    🌸 点击开启青春篇章（初始化后台数据）
+                </button>
             </form>
 
-            <!-- 剧情流式控制台 -->
-            <div id="story-block" class="hidden" style="display:flex; flex-direction:column; gap:12px;">
-                <div class="panel-title" style="margin-bottom:0;">AVG 剧本动态渲染区</div>
-                <div class="story-section" id="story-text"></div>
-                
-                <!-- 实时沙盒控制区 -->
-                <div class="sandbox-controls">
-                    <div class="panel-title" style="font-size:15px; border-left-color:var(--warning)">后台沙盒测试指令</div>
+            <!-- 剧情播放容器，初始隐藏 -->
+            <div id="gameplay-area" class="hidden" style="display:flex; flex-direction:column; gap:15px;">
+                <div class="galgame-box">
+                    <div class="galgame-speaker" id="cur-speaker">系统广播</div>
+                    <div id="story-content"></div>
+                </div>
+
+                <!-- 交互沙盒控制组（方便测试后台机制） -->
+                <div class="sandbox-area">
+                    <div class="card-title" style="font-size: 14px; margin: 0; padding: 0;">🛠️ 引擎沙盒互动控制器 (测试用)</div>
                     
-                    <!-- 调整好感度 -->
+                    <!-- 好感度操作 -->
                     <div class="sandbox-row">
-                        <select id="sb-npc">
+                        <select id="sb-npc-select">
                             <option value="林柚心">林柚心</option>
                             <option value="周艺">周艺</option>
                             <option value="叶衔">叶衔</option>
                             <option value="沈青杉">沈青杉</option>
                         </select>
-                        <button class="btn btn-secondary" onclick="simulateInteract(10)">触发互动 (原始好感 +10)</button>
-                        <span style="font-size:11px; color:var(--text-muted)">* 自动计算好感增长速度修正</span>
+                        <button class="btn-sakura btn-sakura-secondary" style="padding: 6px 12px; font-size:12px;" onclick="testFavorability(15)">
+                            ❤️ 触发事件（好感度增量 +15）
+                        </button>
+                        <span style="font-size: 11px; color: var(--text-muted);">* 自动施加成长修饰器</span>
                     </div>
 
-                    <!-- 阶层流动 -->
+                    <!-- 阶层对流 -->
                     <div class="sandbox-row">
                         <select id="sb-wealth-event">
-                            <option value="postgraduate">考研成功 (财富▲)</option>
-                            <option value="study_abroad">公费留学 (财富▲)</option>
-                            <option value="big_tech_offer">大厂录用 (财富▲)</option>
-                            <option value="lottery">中彩票 (财富▲)</option>
-                            <option value="bankruptcy">家庭破产 (财富▼)</option>
-                            <option value="gambling">赌博输钱 (财富▼)</option>
-                            <option value="car_accident">遭遇车祸 (财富▼)</option>
-                            <option value="illness">身患大病 (财富▼)</option>
+                            <option value="postgraduate">考研成功 (财富 +1)</option>
+                            <option value="study_abroad">公费留学 (财富 +1)</option>
+                            <option value="big_tech_offer">大厂录用 (财富 +1)</option>
+                            <option value="lottery">中彩票 (财富 +1)</option>
+                            <option value="bankruptcy">家庭破产 (财富 -1)</option>
+                            <option value="gambling">陷入博弈 (财富 -1)</option>
+                            <option value="car_accident">遭遇车祸 (财富 -1)</option>
+                            <option value="illness">身患大病 (财富 -1)</option>
                         </select>
-                        <button class="btn btn-secondary" onclick="simulateWealthChange()">触发财富阶层事件</button>
+                        <button class="btn-sakura btn-sakura-secondary" style="padding: 6px 12px; font-size:12px;" onclick="testWealthChange()">
+                            💎 注入命运轨迹事件
+                        </button>
                     </div>
 
-                    <!-- 命运拦截 -->
+                    <!-- 命运关卡拦截 -->
                     <div class="sandbox-row">
-                        <select id="sb-check-npc">
+                        <select id="sb-gate-npc">
                             <option value="林柚心">林柚心</option>
                             <option value="周艺">周艺</option>
                             <option value="叶衔">叶衔</option>
                             <option value="沈青杉">沈青杉</option>
                         </select>
-                        <select id="sb-check-stage">
-                            <option value="ambiguity">暧昧 阶段</option>
-                            <option value="love">恋爱 阶段</option>
-                            <option value="marriage">结婚 阶段</option>
+                        <select id="sb-gate-stage">
+                            <option value="ambiguity">【暧昧】里程碑</option>
+                            <option value="love">【恋爱】里程碑</option>
+                            <option value="marriage">【结婚】里程碑</option>
                         </select>
-                        <button class="btn btn-secondary" style="border-color:var(--warning); color:var(--warning);" onclick="simulateGatekeeping()">调用命运拦截器</button>
+                        <button class="btn-sakura" style="padding: 6px 12px; font-size:12px;" onclick="testGatekeeping()">
+                            ⚖️ 命运关口强制检定
+                        </button>
+                    </div>
+
+                    <!-- 迷雾揭开 -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button class="btn-sakura btn-sakura-secondary" style="padding: 6px 12px; font-size:11px;" onclick="revealAllPreferences()">
+                            👁️ 窥视部分偏好（逐步解锁迷雾日志）
+                        </button>
+                        <button class="btn-sakura btn-sakura-secondary" style="padding: 6px 12px; font-size:11px;" onclick="resetEngine()">
+                            🔄 重设返回初始画面
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 右侧：后台实时数据、锁判定与日志 -->
-        <div class="panel">
-            <div class="panel-title">引擎实时监视器 (Console Panel)</div>
+        <!-- 右侧分栏：实时情报面板、好感迷雾、印象日志 -->
+        <div class="glass-card">
+            <div class="card-title">🌸 实时情报数据中心（Dossier Desk）</div>
             
-            <div class="status-grid">
-                <div>
-                    <h3 style="font-size: 14px; margin-bottom: 5px; color: var(--accent-color);">[1] 当前玩家状态数据 (Player Profile)</h3>
-                    <div class="profile-summary">
-                        <div><span>姓名：</span><span id="stat-name" class="log-info">-</span></div>
-                        <div><span>性别：</span><span id="stat-gender">-</span></div>
-                        <div><span>年龄：</span><span id="stat-age">-</span></div>
-                        <div><span>外貌特征：</span><span id="stat-traits">-</span></div>
-                        <div><span>初始家境：</span><span id="stat-init-wealth">-</span></div>
-                        <div><span>当前资产档次：</span><span id="stat-cur-wealth" class="log-warning" style="font-weight: bold;">-</span></div>
-                        <div><span>家庭形态：</span><span id="stat-family">-</span></div>
-                        <div><span>隐藏秘密：</span><span id="stat-hide-bg">-</span></div>
+            <!-- 玩家基本面 -->
+            <div id="player-summary" style="font-size: 13px; color: var(--text-dark); background: rgba(255,255,255,0.6); padding: 12px; border-radius: 12px; border: 1px solid var(--sakura-pink-soft);">
+                <strong>主线状态：</strong><span id="sum-line" class="log-info" style="font-weight: bold;">等待开篇...</span><br>
+                <strong>姓名/资产：</strong><span id="sum-name">-</span> / <span id="sum-wealth" style="font-weight:bold; color:var(--sakura-accent);">-</span><br>
+                <strong>特征印象：</strong><span id="sum-features">-</span>
+            </div>
+
+            <!-- 四位角色好感度表现区（迷雾渲染） -->
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <!-- 林柚心 -->
+                <div class="dossier-card">
+                    <div class="dossier-info">
+                        <span class="dossier-name">林柚心 🌸</span>
+                        <span class="dossier-desc">性格细腻，追求完美的长发少女。</span>
                     </div>
+                    <span class="foggy-favor" id="favor-lin">❤️ 【点头之交】</span>
                 </div>
 
-                <div>
-                    <h3 style="font-size: 14px; margin-bottom: 5px; color: var(--accent-color);">[2] NPC 好感度与约束器监控</h3>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        
-                        <!-- 林柚心 -->
-                        <div class="npc-card">
-                            <div class="npc-header">
-                                <span class="npc-name">林柚心 <span style="font-size:11px; font-weight:normal; color:var(--text-muted);">(双性恋)</span></span>
-                                <div class="npc-tags" id="tags-lin">
-                                    <span class="badge badge-ok">正常</span>
-                                </div>
-                            </div>
-                            <div class="favor-bar-bg"><div class="favor-bar-fill" id="bar-lin"></div></div>
-                            <div class="npc-details">
-                                <span>当前好感：<strong id="favor-lin">40</strong></span>
-                                <span>速度加成：<strong id="speed-lin">1.0x</strong></span>
-                            </div>
-                        </div>
-
-                        <!-- 周艺 -->
-                        <div class="npc-card">
-                            <div class="npc-header">
-                                <span class="npc-name">周艺 <span style="font-size:11px; font-weight:normal; color:var(--text-muted);">(同性恋 - 仅喜女)</span></span>
-                                <div class="npc-tags" id="tags-zhou">
-                                    <span class="badge badge-ok">正常</span>
-                                </div>
-                            </div>
-                            <div class="favor-bar-bg"><div class="favor-bar-fill" id="bar-zhou"></div></div>
-                            <div class="npc-details">
-                                <span>当前好感：<strong id="favor-zhou">40</strong></span>
-                                <span>速度加成：<strong id="speed-zhou">1.0x</strong></span>
-                            </div>
-                        </div>
-
-                        <!-- 叶衔 -->
-                        <div class="npc-card">
-                            <div class="npc-header">
-                                <span class="npc-name">叶衔 <span style="font-size:11px; font-weight:normal; color:var(--text-muted);">(异性恋)</span></span>
-                                <div class="npc-tags" id="tags-ye">
-                                    <span class="badge badge-ok">正常</span>
-                                </div>
-                            </div>
-                            <div class="favor-bar-bg"><div class="favor-bar-fill" id="bar-ye"></div></div>
-                            <div class="npc-details">
-                                <span>当前好感：<strong id="favor-ye">40</strong></span>
-                                <span>速度加成：<strong id="speed-ye">1.0x</strong></span>
-                            </div>
-                        </div>
-
-                        <!-- 沈青杉 -->
-                        <div class="npc-card">
-                            <div class="npc-header">
-                                <span class="npc-name">沈青杉 <span style="font-size:11px; font-weight:normal; color:var(--text-muted);">(双性恋)</span></span>
-                                <div class="npc-tags" id="tags-shen">
-                                    <span class="badge badge-ok">正常</span>
-                                </div>
-                            </div>
-                            <div class="favor-bar-bg"><div class="favor-bar-fill" id="bar-shen"></div></div>
-                            <div class="npc-details">
-                                <span>当前好感：<strong id="favor-shen">40</strong></span>
-                                <span>速度加成：<strong id="speed-shen">1.0x</strong></span>
-                            </div>
-                        </div>
-
+                <!-- 周艺 -->
+                <div class="dossier-card">
+                    <div class="dossier-info">
+                        <span class="dossier-name">周艺 🌸</span>
+                        <span class="dossier-desc">个性果敢自立，偶尔有点神秘的学姐。</span>
                     </div>
+                    <span class="foggy-favor" id="favor-zhou">❤️ 【点头之交】</span>
+                </div>
+
+                <!-- 叶衔 -->
+                <div class="dossier-card">
+                    <div class="dossier-info">
+                        <span class="dossier-name">叶衔 🌸</span>
+                        <span class="dossier-desc">家族底蕴深厚，沉稳中带着矜持。</span>
+                    </div>
+                    <span class="foggy-favor" id="favor-ye">❤️ 【点头之交】</span>
+                </div>
+
+                <!-- 沈青杉 -->
+                <div class="dossier-card">
+                    <div class="dossier-info">
+                        <span class="dossier-name">沈青杉 🌸</span>
+                        <span class="dossier-desc">行事严谨清高，追求精神层面的契合。</span>
+                    </div>
+                    <span class="foggy-favor" id="favor-shen">❤️ 【点头之交】</span>
                 </div>
             </div>
 
-            <!-- 底层运行日志 -->
-            <div style="display:flex; flex-direction:column; gap:5px; flex-grow:1;">
-                <h3 style="font-size: 14px; color: var(--accent-color);">[3] 底层事件监听器 (Engine Log)</h3>
-                <div class="console-log" id="console-output">
-                    <div class="log-entry log-info">[系统] 引擎等待初始化。请配置左侧角色属性并开始游戏...</div>
+            <!-- 门第观念迷雾日志 -->
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <div class="card-title" style="font-size: 15px; border-bottom: none; padding-bottom: 0;">🌸 门第与偏好线索（Impression Logs）</div>
+                <div class="impression-log" id="log-container">
+                    <div class="impression-item" id="imp-lin"><strong>林柚心：</strong><span>🌸 ？？？（随着剧情推进逐步解锁）</span></div>
+                    <div class="impression-item" id="imp-zhou"><strong>周艺：</strong><span>🌸 ？？？（随着剧情推进逐步解锁）</span></div>
+                    <div class="impression-item" id="imp-ye"><strong>叶衔：</strong><span>🌸 ？？？（随着剧情推进逐步解锁）</span></div>
+                    <div class="impression-item" id="imp-shen"><strong>沈青杉：</strong><span>🌸 ？？？（随着剧情推进逐步解锁）</span></div>
                 </div>
+            </div>
+
+            <!-- 开发者底层指令记录 -->
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <div style="font-size:12px; font-weight:bold; color:var(--text-muted);">Console Logs (后台数值引擎输出)</div>
+                <div class="logger-panel" id="logger">等待游戏引擎就绪...</div>
             </div>
         </div>
 
     </div>
 
+    <!-- 粒子特效和脚本交互 -->
     <script>
-        // 游戏引擎全局状态
+        // ================= 后台核心数据模型 =================
         let player = {};
-        const wealthLevels = ["poor", "working", "middle", "elite"];
-        const wealthChs = { poor: "家境贫寒", working: "工薪温饱", middle: "中产小康", elite: "豪门世家" };
+        const wealthStages = ["poor", "working", "middle", "elite"];
+        const wealthCh = { poor: "贫寒", working: "温饱", middle: "小康", elite: "豪门" };
 
         let npcs = {
-            "林柚心": { favorability: 40, gender_lock: false, speed_modifier: 1.0 },
-            "周艺": { favorability: 40, gender_lock: false, speed_modifier: 1.0 },
-            "叶衔": { favorability: 40, gender_lock: false, speed_modifier: 1.0 },
-            "沈青杉": { favorability: 40, gender_lock: false, speed_modifier: 1.0 }
+            "林柚心": { favorability: 20, speed_modifier: 1.0, gender_lock: false, revealed_pref: false },
+            "周艺": { favorability: 20, speed_modifier: 1.0, gender_lock: false, revealed_pref: false },
+            "叶衔": { favorability: 20, speed_modifier: 1.0, gender_lock: false, revealed_pref: false },
+            "沈青杉": { favorability: 20, speed_modifier: 1.0, gender_lock: false, revealed_pref: false }
         };
 
-        // UI 切换控制：隐藏非独生子女时的兄弟姐妹选项
-        function toggleSiblingUI(isSingle) {
-            const group = document.getElementById("sibling-type-group");
+        // 樱花瓣生成系统
+        function createSakura() {
+            const petal = document.createElement('div');
+            petal.classList.add('falling-petal');
+            
+            // 随机尺寸、位置与延迟
+            const size = Math.random() * 15 + 8;
+            petal.style.width = `${size}px`;
+            petal.style.height = `${size}px`;
+            petal.style.left = `${Math.random() * 100}vw`;
+            
+            const duration = Math.random() * 5 + 6;
+            petal.style.animationDuration = `${duration}s`;
+            petal.style.animationDelay = `${Math.random() * 3}s`;
+            
+            document.body.appendChild(petal);
+
+            setTimeout(() => {
+                petal.remove();
+            }, (duration + 3) * 1000);
+        }
+        setInterval(createSakura, 500);
+
+        // 切换手足显示
+        function toggleSibling(isSingle) {
+            const wrap = document.getElementById("sibling-wrap");
             if (isSingle) {
-                group.classList.add("hidden");
-                document.getElementById("p-sibling").value = "none";
+                wrap.classList.add("hidden");
+                document.getElementById("p_sibling").value = "none";
             } else {
-                group.classList.remove("hidden");
+                wrap.classList.remove("hidden");
             }
         }
 
-        // 输出日志到引擎后台面板
-        function logEvent(msg, type = 'info') {
-            const consoleOutput = document.getElementById("console-output");
-            const timeStr = new Date().toLocaleTimeString();
-            const logDiv = document.createElement("div");
-            logDiv.className = `log-entry log-${type}`;
-            logDiv.innerText = `[${timeStr}] ${msg}`;
-            consoleOutput.appendChild(logDiv);
-            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        // 后台控制台日志输出
+        function appendLog(text, level="info") {
+            const logger = document.getElementById("logger");
+            const time = new Date().toLocaleTimeString();
+            const classMap = { "info": "log-info", "success": "log-success", "warn": "log-warn" };
+            const classStr = classMap[level] || "";
+            
+            logger.innerHTML += `\n<span class="${classStr}">[${time}] ${text}</span>`;
+            logger.scrollTop = logger.scrollHeight;
         }
 
-        // 核心：路由拦截逻辑 (姓名彩蛋)
-        function checkEasterEggs(name) {
-            if (name === "致那段终将逝去的时光") {
-                logEvent("★ 触发彩蛋！系统成功拦截原路由，强制载入高中 IF 线。", "warning");
-                renderTypewriter("【隐藏剧情：高中 IF 线】\n\n你触发了隐藏的高中IF线，做不完的试卷与走廊的偶遇在等待着你……\n阳光透过香樟树洒在空无一人的教室课桌上，广播里正放着略带沙哑的校园歌谣。");
-                lockFormInputs();
-                return true;
-            } else if (name === "拒绝大厂福报") {
-                logEvent("★ 触发彩蛋！系统成功拦截原路由，强制载入职场 IF 线。", "warning");
-                renderTypewriter("【隐藏剧情：职场 IF 线】\n\n你触发了隐藏的职场IF线，深夜的咖啡与无尽的KPI扑面而来……\n格子间里敲击键盘的声音此起彼伏，你抬头看了看窗外的霓虹灯，以及屏幕上快要逼近的Deadline。");
-                lockFormInputs();
-                return true;
-            }
-            return false;
-        }
-
-        // 核心：底层好感度初始化逻辑
-        function initializeNPCFavorability() {
-            // 重置默认好感
-            for (let name in npcs) {
-                npcs[name].favorability = 40;
-                npcs[name].gender_lock = false;
-                npcs[name].speed_modifier = 1.0;
-            }
-
-            logEvent("开始动态计算 NPC 初始好感加成...", "info");
-
-            // 1. 林柚心 初始值修正
-            if (player.gender === "女") {
-                if (player.eyelids === "双眼皮") {
-                    npcs["林柚心"].favorability += 3;
-                    logEvent("林柚心: [玩家为女且双眼皮] 好感 +3");
-                }
-                if (player.hair_style === "长发") {
-                    npcs["林柚心"].favorability += 5;
-                    logEvent("林柚心: [玩家为女且留长发] 好感 +5");
-                }
-                if (player.has_canines) {
-                    npcs["林柚心"].favorability += 3;
-                    logEvent("林柚心: [玩家为女且有虎牙] 好感 +3");
-                }
-            } else if (player.gender === "男" && player.hair_style === "长发") {
-                npcs["林柚心"].favorability -= 5;
-                logEvent("林柚心: [玩家为男且长发] 好感 -5", "warning");
-            }
-
-            // 2. 周艺 初始值修正与性别锁
-            if (player.gender === "女" && player.hair_style === "长发") {
-                npcs["周艺"].favorability += 5;
-                logEvent("周艺: [玩家为女且留长发] 好感 +5");
-            }
-            if (player.gender === "男") {
-                npcs["周艺"].gender_lock = true;
-                logEvent("周艺: 激活 [男性性别锁]，好感度上限将永久锁死在 60 级 (触发坦白性取向剧情)", "danger");
-            }
-
-            // 3. 叶衔 初始值修正与性别锁、速度修正
-            if (player.has_canines) {
-                npcs["叶衔"].favorability += 3;
-                logEvent("叶衔: [玩家有虎牙] 好感 +3");
-            }
-            if (player.wears_glasses) {
-                npcs["叶衔"].favorability -= 3;
-                logEvent("叶衔: [玩家戴眼镜] 好感 -3", "warning");
-            }
-            if (player.gender === "男") {
-                npcs["叶衔"].gender_lock = true;
-                logEvent("叶衔: 激活 [同性性别锁]，好感度上限将永久锁死在 60 级", "danger");
-                
-                // 姐姐存在，速度乘0.5
-                if (!player.is_single_child && player.sibling_type === "older_sister") {
-                    npcs["叶衔"].speed_modifier = 0.5;
-                    logEvent("叶衔: 触发家庭背景影响 [男玩家非独生且有姐姐]，好感度增长速度永久降为 0.5x", "warning");
-                }
-            }
-
-            // 4. 沈青杉 初始值修正、速度修正
-            if (player.wears_glasses) {
-                npcs["沈青杉"].favorability += 3;
-                logEvent("沈青杉: [玩家戴眼镜] 好感 +3");
-            }
-            if (player.gender === "男" && player.hair_style === "长发") {
-                npcs["沈青杉"].favorability -= 5;
-                logEvent("沈青杉: [玩家为男且留长发] 好感 -5", "warning");
-            }
-            if (player.gender === "男" && !player.is_single_child && player.sibling_type === "older_sister") {
-                npcs["沈青杉"].speed_modifier = 0.5;
-                logEvent("沈青杉: 触发家庭背景影响 [男玩家非独生且有姐姐]，好感度增长速度永久降为 0.5x", "warning");
-            }
-
-            // 校验上限控制
-            for (let name in npcs) {
-                if (npcs[name].gender_lock && npcs[name].favorability > 60) {
-                    npcs[name].favorability = 60;
-                }
-            }
-
-            logEvent("NPC 好感度及速度修正初始化完毕。", "success");
-        }
-
-        // 核心：中后期命运拦截状态机
+        // ================= 命运拦截系统（Gatekeeping System） =================
         function check_relationship_stage(npc_name, stage) {
             const initial = player.initial_wealth;
             const current = player.current_wealth;
             const divorced = player.is_parents_divorced;
             const single = player.is_single_child;
 
-            logEvent(`[状态机校验] 判定 ${npc_name} 在 [${stageCh(stage)}] 阶段的亲密关系发展资格...`, "info");
+            appendLog(`[判定引擎] 开始校验 ${npc_name} 在 [${stageTranslate(stage)}] 阶段的命运关卡...`, "info");
 
             if (npc_name === "林柚心") {
                 if (stage === "marriage") {
-                    if (initial === "poor") {
-                        logEvent(`[拦截器触发] 因初始家境为贫寒(poor)，触发林柚心门第拦截机制。`, "danger");
-                        return false;
-                    }
-                    if (divorced) {
-                        logEvent(`[拦截器触发] 因玩家父母离异，触发林柚心原生家庭拦截机制。`, "danger");
+                    if (initial === "poor" || divorced) {
+                        appendLog(`[拦截成功] 林柚心：因原生家庭离异或玩家初始身世过于贫寒，恋爱长跑被林家无情阻隔。`, "warn");
                         return false;
                     }
                 }
@@ -732,362 +746,423 @@
             else if (npc_name === "周艺") {
                 if (stage === "marriage") {
                     if (current === "poor") {
-                        logEvent(`[拦截器触发] 大四结算阶段检测到当前资产档次为贫寒(poor)，周艺拒绝结婚，关系走向破灭。`, "danger");
+                        appendLog(`[拦截成功] 周艺：虽然不在乎你的初始门第，但在面临毕业结合时，玩家当前资产评价仍为贫寒，被迫走向异路。`, "warn");
                         return false;
                     }
                 }
             } 
             else if (npc_name === "叶衔") {
                 if (stage === "love" || stage === "marriage") {
-                    if (initial === "poor") {
-                        logEvent(`[拦截器触发] 因初始家境为贫寒(poor)，叶衔无法接受建立恋爱或更深关系，予以强行拦截。`, "danger");
-                        return false;
-                    }
-                    if (divorced) {
-                        logEvent(`[拦截器触发] 因玩家父母离异，叶衔家族极力阻碍，关系拦截失败。`, "danger");
+                    if (initial === "poor" || divorced) {
+                        appendLog(`[拦截成功] 叶衔：家族极其保守，拒绝与初始贫寒或单亲离异家庭联姻。`, "warn");
                         return false;
                     }
                 }
                 if (stage === "marriage") {
                     if (!single) {
-                        logEvent(`[拦截器触发] 非独生子女无法通过叶衔长辈审查，被强行拦截。`, "danger");
+                        appendLog(`[拦截成功] 叶衔：由于你并非独生子女，叶衔身后的长辈不愿接受繁杂的遗产分配与利益纠葛。`, "warn");
                         return false;
                     }
                 }
             } 
             else if (npc_name === "沈青杉") {
-                // 门第拦截贯穿全阶段
                 if (initial === "poor") {
-                    logEvent(`[拦截器触发] 沈青杉因极强的门第观念，全阶段拦截贫寒(poor)家境玩家，无法发展任何暧昧/亲密关系。`, "danger");
+                    appendLog(`[严重拦截] 沈青杉：其骄傲的天性与清高的行事方式，使他从最初阶段（甚至在暧昧期之前）就切断了与初始贫寒玩家的后续可能性。`, "warn");
                     return false;
                 }
-                // 恋爱及结婚拦截
                 if (stage === "love" || stage === "marriage") {
                     if (divorced) {
-                        logEvent(`[拦截器触发] 玩家父母离异背景，无法通过沈青杉家长的恋爱与结合审查。`, "danger");
+                        appendLog(`[拦截成功] 沈青杉：不悦于和睦度受损的离婚重组家庭，断绝关系发展。`, "warn");
                         return false;
                     }
                 }
-                // 结婚拦截
                 if (stage === "marriage") {
                     if (!single) {
-                        logEvent(`[拦截器触发] 沈青杉长辈不接受非独生家庭，拦截结婚阶段。`, "danger");
+                        appendLog(`[拦截成功] 沈青杉：不接受非独生背景的婚姻关系绑定。`, "warn");
                         return false;
                     }
                 }
             }
-
-            logEvent(`[状态机放行] 恭喜！当前状态符合要求，顺利通过 ${npc_name} 的 [${stageCh(stage)}] 关系审查机制！`, "success");
+            appendLog(`[判定放行] ${npc_name} 在 [${stageTranslate(stage)}] 阶段的门第审查全部通过！`, "success");
             return true;
         }
 
-        // 核心：阶层流动事件触发器
+        // ================= 阶层对流系统（Wealth Fluctuations） =================
         function change_wealth_level(change_type) {
             const positives = ["postgraduate", "study_abroad", "big_tech_offer", "lottery"];
             const negatives = ["bankruptcy", "gambling", "car_accident", "illness"];
             
-            let curIndex = wealthLevels.indexOf(player.current_wealth);
+            let index = wealthStages.indexOf(player.current_wealth);
             let prevWealth = player.current_wealth;
 
             if (positives.includes(change_type)) {
-                if (curIndex < wealthLevels.length - 1) {
-                    curIndex++;
-                    player.current_wealth = wealthLevels[curIndex];
-                    logEvent(`◆ 财富变动(正面): 触发[${eventCh(change_type)}]，家境提升至 [${wealthChs[player.current_wealth]}]`, "success");
+                if (index < wealthStages.length - 1) {
+                    index++;
+                    player.current_wealth = wealthStages[index];
+                    appendLog(`阶层流动：获得正面际遇【${wealthEventTranslate(change_type)}】，当前家庭财富提升至 [${wealthCh[player.current_wealth]}]`, "success");
                 } else {
-                    logEvent(`◆ 财富变动: 玩家已达最高档次[豪门世家]，资产无法继续提升。`, "info");
+                    appendLog("阶层流动：已达巨富[豪门]，资产值无法再行向上突破。", "info");
                 }
             } else if (negatives.includes(change_type)) {
-                if (curIndex > 0) {
-                    curIndex--;
-                    player.current_wealth = wealthLevels[curIndex];
-                    logEvent(`◆ 财富变动(负面): 触发[${eventCh(change_type)}]，家境坠落至 [${wealthChs[player.current_wealth]}]`, "danger");
+                if (index > 0) {
+                    index--;
+                    player.current_wealth = wealthStages[index];
+                    appendLog(`阶层变动：遭遇负面打击【${wealthEventTranslate(change_type)}】，财富等级下坠至 [${wealthCh[player.current_wealth]}]`, "warn");
                 } else {
-                    logEvent(`◆ 财富变动: 玩家资产已处在最低谷[家境贫寒]，无法进一步降级。`, "info");
+                    appendLog("阶层流动：生存境遇已落入深渊[贫寒]，财富值无法再向下跌落。", "info");
                 }
             }
 
             if (prevWealth !== player.current_wealth) {
-                updateDashboard();
+                updateUI();
             }
         }
 
-        // 开始游戏按钮触发
-        function startGame() {
-            // 抓取并组装表单数据
-            const name = document.getElementById("p-name").value.trim();
-            if (!name) {
+        // ================= 引擎数据初始化 =================
+        function engineInit() {
+            const name = document.getElementById("p_name").value.trim();
+            if(!name) {
                 alert("请输入玩家姓名！");
                 return;
             }
 
-            // 路由拦截器检测
-            if (checkEasterEggs(name)) {
+            // 1. 路由拦截：姓名彩蛋系统
+            if (name === "致那段终将逝去的时光") {
+                appendLog("【高中 IF 线】路由强制拦截！", "warn");
+                setupStoryMode("高中线占位", "【隐藏剧情：高中 IF 线】\n\n你触发了隐藏的高中IF线，做不完的试卷与走廊的偶遇在等待着你……\n微风吹拂过落满灰尘的黑板，那一年的夏天，蝉鸣声声，试卷上的墨香依旧温热。");
+                updateSummary("【高中 IF 线】占位跳转", name);
+                return;
+            } else if (name === "拒绝大厂福报") {
+                appendLog("【职场 IF 线】路由强制拦截！", "warn");
+                setupStoryMode("职场线占位", "【隐藏剧情：职场 IF 线】\n\n你触发了隐藏的职场IF线，深夜的咖啡与无尽的KPI扑面而来……\n格子间里的机械键盘声连绵不断。看着窗外高耸入云的写字楼灯光，你握紧了咖啡杯。");
+                updateSummary("【职场 IF 线】占位跳转", name);
                 return;
             }
 
-            // 构造标准Player对象
+            // 2. 构造正常 Player 对象
             player = {
                 name: name,
-                age: parseInt(document.getElementById("p-age").value) || 18,
-                gender: document.querySelector('input[name="p-gender"]:checked').value,
-                eyelids: document.querySelector('input[name="p-eyelids"]:checked').value,
-                has_canines: document.querySelector('input[name="p-canines"]:checked').value === "true",
-                wears_glasses: document.querySelector('input[name="p-glasses"]:checked').value === "true",
-                hair_style: document.querySelector('input[name="p-hair"]:checked').value,
-                initial_wealth: document.getElementById("p-wealth").value,
-                current_wealth: document.getElementById("p-wealth").value,
-                is_single_child: document.querySelector('input[name="p-single"]:checked').value === "true",
-                sibling_type: document.getElementById("p-sibling").value,
-                is_parents_divorced: document.querySelector('input[name="p-divorced"]:checked').value === "true",
-                is_hiding_background: document.getElementById("p-hide-bg").checked
+                age: parseInt(document.getElementById("p_age").value) || 18,
+                gender: document.querySelector('input[name="p_gender"]:checked').value,
+                eyelids: document.querySelector('input[name="p_eyelids"]:checked').value,
+                has_canines: document.querySelector('input[name="p_canines"]:checked').value === "true",
+                wears_glasses: document.querySelector('input[name="p_glasses"]:checked').value === "true",
+                hair_style: document.querySelector('input[name="p_hair"]:checked').value,
+                initial_wealth: document.getElementById("p_wealth").value,
+                current_wealth: document.getElementById("p_wealth").value,
+                is_single_child: document.querySelector('input[name="p_single"]:checked').value === "true",
+                sibling_type: document.getElementById("p_sibling").value,
+                is_parents_divorced: document.querySelector('input[name="p_divorced"]:checked').value === "true",
+                is_hiding_background: document.getElementById("p_hide").checked
             };
 
-            logEvent(`玩家数据结构存储成功。姓名: ${player.name}, 初始家境: ${wealthChs[player.initial_wealth]}`, "success");
+            appendLog(`核心数据建档成功。姓名：${player.name}，初始财富级别：${wealthCh[player.initial_wealth]}`, "success");
 
-            // 计算NPC初始关系数据
-            initializeNPCFavorability();
+            // 3. 计算 4 位 NPC 的初始好感值
+            calculateInitialFavorability();
 
-            // 锁定表单，进入剧情渲染阶段
-            lockFormInputs();
-
-            // 生成并动态展示开学背景剧情
-            const startText = generateDynamicPrologue();
-            renderTypewriter(startText);
-
-            // 显示沙盒互动和调试指令区
-            document.getElementById("story-block").classList.remove("hidden");
-            document.getElementById("stage-title").innerText = "调试状态：大学校园主线进行中...";
+            // 4. 进入剧情对话界面
+            setupStoryMode("系统主线", "等待引擎输出...");
+            const introText = buildIntroNarrative();
+            typewriterEffect(introText);
 
             // 更新仪表盘
-            updateDashboard();
+            updateUI();
         }
 
-        // 动态拼装开学序章剧本
-        function generateDynamicPrologue() {
-            let story = "【大学主线：开学序章】\n\n";
-
-            // 第一段：外貌特征动态拼入描写
-            if (!player.wears_glasses && player.hair_style === "长发") {
-                story += "你轻轻理了理随风飘散的及肩长发，凝望着远处写有‘大学’校名的雄伟石碑，神情带着些许不羁与憧憬。";
-            } else if (player.wears_glasses && player.hair_style === "长发") {
-                story += "你推了推鼻梁上沉甸甸的眼镜框，顺手拂去垂落在肩头的长发，深吸一口气，打量着即将度过四年青春的大学校门。";
-            } else if (player.wears_glasses && player.hair_style === "短发") {
-                story += "你推了推鼻梁上的眼镜，清爽利落的短发在和煦的微风中微微拂动。你整了整衣角，望向人声鼎沸的迎新接待区。";
-            } else {
-                story += "微风轻拂着你清爽帅气的短发。你望着前方巨大的校门，嘴角挂起一个期待的微笑，迈开坚定的步伐走了进去。";
+        // ================= 初始好感与速度修正 =================
+        function calculateInitialFavorability() {
+            // 重置基准 20
+            for (let k in npcs) {
+                npcs[k].favorability = 20;
+                npcs[k].speed_modifier = 1.0;
+                npcs[k].gender_lock = false;
             }
 
-            story += "\n\n";
+            appendLog("开始注入第一轮初始特征增减机制...", "info");
 
-            // 第二段：家境和原生家庭隐私设置
+            // 1. 林柚心
+            if (player.gender === "女") {
+                if (player.eyelids === "双眼皮") npcs["林柚心"].favorability += 3;
+                if (player.hair_style === "长发") npcs["林柚心"].favorability += 5;
+                if (player.has_canines) npcs["林柚心"].favorability += 3;
+            } else if (player.gender === "男" && player.hair_style === "长发") {
+                npcs["林柚心"].favorability -= 5;
+            }
+
+            // 2. 周艺
+            if (player.gender === "女" && player.hair_style === "长发") {
+                npcs["周艺"].favorability += 5;
+            }
+            if (player.gender === "男") {
+                npcs["周艺"].gender_lock = true; // 后台悄悄锁死
+            }
+
+            // 3. 叶衔
+            if (player.has_canines) npcs["叶衔"].favorability += 3;
+            if (player.wears_glasses) npcs["叶衔"].favorability -= 3;
+            if (player.gender === "男") {
+                npcs["叶衔"].gender_lock = true; // 后台锁死
+                if (!player.is_single_child && player.sibling_type === "older_sister") {
+                    npcs["叶衔"].speed_modifier = 0.5; // 速度减半
+                    appendLog("【速度降权】叶衔好感增加速率受家庭阻力影响，减损为 0.5 倍速。", "warn");
+                }
+            }
+
+            // 4. 沈青杉
+            if (player.wears_glasses) npcs["沈青杉"].favorability += 3;
+            if (player.gender === "男" && player.hair_style === "长发") {
+                npcs["沈青杉"].favorability -= 5;
+            }
+            if (player.gender === "男" && !player.is_single_child && player.sibling_type === "older_sister") {
+                npcs["沈青杉"].speed_modifier = 0.5; // 速度减半
+                appendLog("【速度降权】沈青杉好感速率因姐姐的存在而降权，减损为 0.5 倍速。", "warn");
+            }
+
+            // 防止越界
+            for (let name in npcs) {
+                npcs[name].favorability = Math.max(0, Math.min(100, npcs[name].favorability));
+            }
+            appendLog("初始好感数值注入完成（基于迷雾机制，前端面板已加密显示）。");
+        }
+
+        // ================= 前端“迷雾机制”渲染（UI/UX Layout） =================
+        function updateUI() {
+            if (!player.name) return;
+
+            // 更新玩家基础简报
+            document.getElementById("sum-name").innerText = player.name;
+            document.getElementById("sum-wealth").innerText = wealthCh[player.current_wealth];
+            
+            let featureDesc = `${player.gender} · ${player.eyelids} · ${player.hair_style}`;
+            if (player.wears_glasses) featureDesc += " · 戴眼镜";
+            if (player.has_canines) featureDesc += " · 虎牙";
+            document.getElementById("sum-features").innerText = featureDesc;
+
+            // 渲染好感度迷雾表达
+            renderFavorFog("林柚心", "favor-lin");
+            renderFavorFog("周艺", "favor-zhou");
+            renderFavorFog("叶衔", "favor-ye");
+            renderFavorFog("沈青杉", "favor-shen");
+
+            // 渲染日志印象线索
+            renderImpressionLogs();
+        }
+
+        // 迷雾好感度级别转换
+        function renderFavorFog(npcName, elementId) {
+            const npc = npcs[npcName];
+            const val = npc.favorability;
+            let displayHTML = "";
+
+            if (val >= 20 && val < 40) {
+                displayHTML = `❤️ 【点头之交】`;
+            } else if (val >= 40 && val < 60) {
+                displayHTML = `❤️❤️ 【相谈甚欢】`;
+            } else if (val >= 60 && val < 80) {
+                displayHTML = `❤️❤️❤️ 【流连暧昧】`;
+            } else if (val >= 80 && val < 100) {
+                displayHTML = `❤️❤️❤️❤️ 【灵魂羁绊】`;
+            } else if (val >= 100) {
+                displayHTML = `💖 【生死相依】`;
+            } else {
+                displayHTML = `💔 【形同陌路】`;
+            }
+
+            // 如果触发了周艺或叶衔的性别锁，在达到并卡死在60分后，揭开这个特殊状态
+            if (npc.gender_lock && val === 60) {
+                displayHTML += ` <span style="font-size:10px; color:var(--text-muted);">[关系停滞]</span>`;
+            }
+
+            document.getElementById(elementId).innerHTML = displayHTML;
+        }
+
+        // 偏好日志解锁控制
+        function renderImpressionLogs() {
+            const impList = {
+                "林柚心": "🌸 偏好：不喜家庭分裂。若玩家初始极为贫寒或原生家庭离异，无法达成结婚契盟。",
+                "周艺": "🌸 偏好：重视长远生计。无论你初始出身何样，毕业时玩家当前资产绝不能留在贫寒级。",
+                "叶衔": "🌸 偏好：家族作风正统。不喜离异家庭；且叶家长辈拒绝非独生背景的婚姻羁绊。",
+                "沈青杉": "🌸 偏好：家风高洁严苛。初始身世必须在温饱之上，否则暧昧期前即行拦截；抵触非独生与离异家庭。"
+            };
+
+            for (let name in npcs) {
+                const elementId = npcIdMap(name);
+                const isRevealed = npcs[name].revealed_pref;
+                const impSpan = document.querySelector(`#${elementId} span`);
+                
+                if (isRevealed) {
+                    impSpan.innerText = impList[name];
+                    impSpan.style.color = "var(--sakura-accent)";
+                } else {
+                    impSpan.innerText = "🌸 ？？？（随着剧情推进逐步解锁）";
+                    impSpan.style.color = "var(--text-muted)";
+                }
+            }
+        }
+
+        // 解锁日志偏好接口
+        function unlockImpression(npc_name, toggleValue = true) {
+            if (npcs[npc_name]) {
+                npcs[npc_name].revealed_pref = toggleValue;
+                appendLog(`[迷雾稀释] 已成功解锁关于 【${npc_name}】 的隐藏门第观念线索！`, "success");
+                updateUI();
+            }
+        }
+
+        // 解锁林柚心等角色偏好线索 (按钮调用)
+        let unlcokSeq = ["林柚心", "周艺", "叶衔", "沈青杉"];
+        let currentSeqIdx = 0;
+        function revealAllPreferences() {
+            if (currentSeqIdx < unlcokSeq.length) {
+                const targetNpc = unlcokSeq[currentSeqIdx];
+                unlockImpression(targetNpc, true);
+                currentSeqIdx++;
+            } else {
+                appendLog("所有的门第线索已经在实时日志面板中破除完毕啦！");
+            }
+        }
+
+        // ================= AVG 剧情叙事生成器 =================
+        function buildIntroNarrative() {
+            let story = "【大学校园主线：开篇迎新】\n\n";
+
+            if (!player.wears_glasses && player.hair_style === "长发") {
+                story += "你撩了撩及肩的长发，没有了眼镜的束缚，整个人显得自信满满。望着气派高大的大学牌坊，你的眼眸中闪烁着对未来的遐想。\n";
+            } else if (player.wears_glasses && player.hair_style === "长发") {
+                story += "你轻轻往上推了推眼镜，将一头顺滑的长发束到脑后，以认真的目光审视着繁华热闹的开学迎新广场，对新生活做好了十足的准备。\n";
+            } else if (player.wears_glasses && player.hair_style === "短发") {
+                story += "你略带羞涩地推了推眼镜框，微风中你的一头短发显得干练利落。周围充满欢声笑语，你默默提起行李走入人海。\n";
+            } else {
+                story += "阳光轻拂过你清爽的短发，神清气爽的你大步走向了充满青春朝气的报到点。你坚信这里将写下最浪漫的四年青春。\n";
+            }
+
+            story += "\n";
+
             if (player.is_hiding_background) {
-                story += "在此之前，你小心翼翼地收起了所有带有利害关系的家庭标签。在这个谁也不曾认识你的崭新环境里，你决心掩盖过往的所有秘密，做一个普普通通的行路者。";
+                story += "在填写家庭状况的一栏中，你刻意隐瞒了那些复杂的出身信息。在你看来，过去的一切就留在过去，在这里，所有人都应当只是一个不带包袱的平凡人。";
             } else {
                 if (player.initial_wealth === "poor") {
-                    story += "行李箱的万向轮因长时间磨损而发出生硬的咯吱声。你看着四周新生手中昂贵的手提包，不着痕迹地抿了抿嘴唇。学费已耗尽了家庭微薄的积蓄，对你来说，开学后的第一项考验便是去兼职中心寻找勤工助学的机会。";
+                    story += "行李箱有些破旧，轮轴摩擦出的咯吱声在喧闹的广场上显得有点格格不入。你知道学费是父母攒了很久的汗水钱，因此暗下决心，到宿舍放下行李后的第一件事就是去申请助学勤工岗位。";
                 } else if (player.initial_wealth === "elite") {
-                    story += "豪华专车在校门前低调而平稳地刹住。你从司机的后备箱中接过精致的手提箱，四周人群投来异样而羡慕的目光，你优雅自若地报以微笑。相比于寻常学子对学业前程的担忧，你拥有的资本让你在此处闲庭信步。";
+                    story += "由高档商务专车将你直接送入校门一侧，管家熟练地帮你取下高档手工箱。周围学生纷纷投来好奇的目光，你优雅淡然地跟他们点头打招呼——这里的舞台生来就属于你。";
                 } else {
-                    story += "拉着行李箱，你顺畅地汇入到报到的新生人海当中。身边充满了年轻的面庞，你虽然对陌生的旅途有一点点发怵，但对即将迎来的生活同样饱含着满腔的热枕。";
+                    story += "带着不多不少的行囊，你平平稳稳地完成了入学报到手续。父母在电话里殷切叮嘱你照顾好自己，你温和地宽慰着他们，踏向宽阔而美好的未来。";
                 }
             }
 
             return story;
         }
 
-        // 打字机渲染文字
-        function renderTypewriter(text) {
-            const container = document.getElementById("story-text");
+        // ================= 打字机视觉控制 =================
+        function typewriterEffect(text) {
+            const container = document.getElementById("story-content");
             container.innerHTML = "";
-            let index = 0;
-            
+            let i = 0;
             function type() {
-                if (index < text.length) {
-                    container.innerHTML += text.charAt(index);
-                    index++;
-                    container.scrollTop = container.scrollHeight;
-                    setTimeout(type, 20); // 打字速度：20ms/字
+                if (i < text.length) {
+                    container.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, 18);
                 }
             }
             type();
         }
 
-        // 锁定表单输入
-        function lockFormInputs() {
-            const elements = document.querySelectorAll("#player-form input, #player-form select, #player-form button");
-            elements.forEach(el => {
-                el.disabled = true;
-                el.style.opacity = "0.6";
+        // 切换 UI 至剧情模式
+        function setupStoryMode(lineName, defaultText) {
+            document.getElementById("init-form").classList.add("hidden");
+            document.getElementById("gameplay-area").classList.remove("hidden");
+            document.getElementById("sum-line").innerText = lineName;
+            
+            document.getElementById("story-content").innerText = defaultText;
+        }
+
+        // 重设引擎状态
+        function resetEngine() {
+            document.getElementById("init-form").classList.remove("hidden");
+            document.getElementById("gameplay-area").classList.add("hidden");
+            
+            const formElements = document.querySelectorAll("#init-form input, #init-form select, #init-form button");
+            formElements.forEach(el => {
+                el.disabled = false;
+                el.style.opacity = "1";
             });
-            document.getElementById("start-btn").innerText = "引擎已激活 (表单已被锁定)";
-        }
-
-        // 在监视器中实时同步各项属性
-        function updateDashboard() {
-            if (!player.name) return;
-
-            document.getElementById("stat-name").innerText = player.name;
-            document.getElementById("stat-gender").innerText = player.gender;
-            document.getElementById("stat-age").innerText = player.age + "岁";
             
-            let traits = `${player.eyelids}、${player.hair_style}、${player.wears_glasses ? '戴眼镜' : '无眼镜'}、${player.has_canines ? '有虎牙' : '无虎牙'}`;
-            document.getElementById("stat-traits").innerText = traits;
-            
-            document.getElementById("stat-init-wealth").innerText = wealthChs[player.initial_wealth];
-            
-            const curWealthSpan = document.getElementById("stat-cur-wealth");
-            curWealthSpan.innerText = wealthChs[player.current_wealth];
-            
-            let familyStr = player.is_parents_divorced ? "父母离异" : "家庭和睦";
-            if (player.is_single_child) {
-                familyStr += " (独生子女)";
-            } else {
-                familyStr += ` (非独生, 成员: ${siblingCh(player.sibling_type)})`;
+            // 重置状态
+            currentSeqIdx = 0;
+            for (let name in npcs) {
+                npcs[name].revealed_pref = false;
             }
-            document.getElementById("stat-family").innerText = familyStr;
-            document.getElementById("stat-hide-bg").innerText = player.is_hiding_background ? "是 (不对外透露)" : "否";
 
-            // 更新四个NPC的UI面板
-            updateNpcCard("林柚心", "lin");
-            updateNpcCard("周艺", "zhou");
-            updateNpcCard("叶衔", "ye");
-            updateNpcCard("沈青杉", "shen");
+            document.getElementById("sum-line").innerText = "等待开篇...";
+            document.getElementById("sum-name").innerText = "-";
+            document.getElementById("sum-wealth").innerText = "-";
+            document.getElementById("sum-features").innerText = "-";
+
+            appendLog("数值引擎重设成功，恢复初始配制状态。", "info");
+            updateUI();
         }
 
-        // 更新单个NPC的仪表盘卡片
-        function updateNpcCard(npcName, idStr) {
+        // ================= 互动沙盒测试方法 =================
+        function testFavorability(rawInc) {
+            const npcName = document.getElementById("sb-npc-select").value;
             const npc = npcs[npcName];
-            
-            // 进度条渲染
-            const fill = document.getElementById(`bar-${idStr}`);
-            const favorText = document.getElementById(`favor-${idStr}`);
-            const speedText = document.getElementById(`speed-${idStr}`);
-            
-            favorText.innerText = Math.round(npc.favorability);
-            speedText.innerText = npc.speed_modifier.toFixed(1) + "x";
-            
-            // 计算进度百分比，如果触发性别上限则算至60/100
-            let percentage = (npc.favorability / 100) * 100;
-            fill.style.width = percentage + "%";
 
-            // 检查动态约束，生成标签
-            const tagsBox = document.getElementById(`tags-${idStr}`);
-            tagsBox.innerHTML = "";
+            // 考虑速度修正
+            let finalInc = rawInc * npc.speed_modifier;
+            let tempFavor = npc.favorability + finalInc;
 
-            if (npc.gender_lock) {
-                tagsBox.innerHTML += `<span class="badge badge-lock">性别锁</span>`;
-                if (npc.favorability >= 60) {
-                    tagsBox.innerHTML += `<span class="badge badge-warning">友情结局</span>`;
-                }
-            }
-
-            // 动态验证门第和离异条件在目前状况下是否会触发结婚甚至恋爱拦截
-            if (npcName === "林柚心") {
-                if (player.initial_wealth === "poor" || player.is_parents_divorced) {
-                    tagsBox.innerHTML += `<span class="badge badge-danger">结婚锁</span>`;
-                }
-            } else if (npcName === "周艺") {
-                if (player.current_wealth === "poor") {
-                    tagsBox.innerHTML += `<span class="badge badge-danger">结婚阻碍</span>`;
-                }
-            } else if (npcName === "叶衔") {
-                if (player.initial_wealth === "poor" || player.is_parents_divorced) {
-                    tagsBox.innerHTML += `<span class="badge badge-danger">恋爱/结婚拦截</span>`;
-                } else if (!player.is_single_child) {
-                    tagsBox.innerHTML += `<span class="badge badge-danger">结婚拦截</span>`;
-                }
-            } else if (npcName === "沈青杉") {
-                if (player.initial_wealth === "poor") {
-                    tagsBox.innerHTML += `<span class="badge badge-lock">全阶段封锁</span>`;
-                } else {
-                    if (player.is_parents_divorced) {
-                        tagsBox.innerHTML += `<span class="badge badge-danger">恋爱/结婚锁</span>`;
-                    }
-                    if (!player.is_single_child) {
-                        tagsBox.innerHTML += `<span class="badge badge-danger">结婚阻碍</span>`;
-                    }
-                }
-            }
-
-            if (tagsBox.innerHTML === "") {
-                tagsBox.innerHTML = `<span class="badge badge-ok">正常</span>`;
-            }
-        }
-
-        // 交互沙盒：增加好感度 (计算速度修正和性别最高锁值)
-        function simulateInteract(rawIncrement) {
-            const npcName = document.getElementById("sb-npc").value;
-            const npc = npcs[npcName];
-            
-            // 好感增量计算
-            let finalIncrement = rawIncrement * npc.speed_modifier;
-            let originalFavor = npc.favorability;
-            let tempFavor = originalFavor + finalIncrement;
-
-            // 性别拦截器好感限死在60分
-            if (npc.gender_lock && tempFavor > 60) {
+            // 性别拦截器好感锁定
+            if (npc.gender_lock && tempFavor >= 60) {
                 tempFavor = 60;
-                logEvent(`[性别锁限流] ${npcName} 的好感度已达上限 60，无法提升。当前已激活友情线结局。`, "warning");
+                appendLog(`[性别阻击机制] ${npcName} 的好感值在后台试图突破60点上限，已强制扣回 60 分。`, "warn");
+                appendLog(`[迷雾散去] 在达到羁绊瓶颈后，${npcName} 在深夜操场终于向你坦言了其性取向取值。两人的情愫无法再进一步，最终锁定在亲密好友。`, "success");
             } else if (tempFavor > 100) {
                 tempFavor = 100;
             }
 
             npc.favorability = tempFavor;
-            logEvent(`[增加好感] ${npcName} 增加 ${finalIncrement.toFixed(1)} 好感 (原始增量: ${rawIncrement}, 修正系数: ${npc.speed_modifier.toFixed(1)}x)。当前好感: ${Math.round(npc.favorability)}`, "success");
+            appendLog(`后台变化：${npcName} 好感增加 ${finalInc.toFixed(1)}点 (原始：${rawInc}, 速度修饰：${npc.speed_modifier.toFixed(1)}x)，后台实值：${Math.round(npc.favorability)}`, "info");
             
-            updateDashboard();
+            updateUI();
         }
 
-        // 交互沙盒：触发财富事件
-        function simulateWealthChange() {
-            const changeType = document.getElementById("sb-wealth-event").value;
-            change_wealth_level(changeType);
+        function testWealthChange() {
+            const eventType = document.getElementById("sb-wealth-event").value;
+            change_wealth_level(eventType);
         }
 
-        // 交互沙盒：触发命运拦截判定
-        function simulateGatekeeping() {
-            const name = document.getElementById("sb-check-npc").value;
-            const stage = document.getElementById("sb-check-stage").value;
-
-            const isAllowed = check_relationship_stage(name, stage);
+        function testGatekeeping() {
+            const npcName = document.getElementById("sb-gate-npc").value;
+            const stage = document.getElementById("sb-gate-stage").value;
             
-            if (isAllowed) {
-                alert(`【底层校验通过】\n\n玩家与 [${name}] 的关系可以顺利晋升至 [${stageCh(stage)}]！`);
+            const passed = check_relationship_stage(npcName, stage);
+            
+            if (passed) {
+                alert(`【底层状态机校验放行！】\n\n恭喜！你与 [${npcName}] 之间当前的家境与背景变量通过了 [${stageTranslate(stage)}] 考验。`);
             } else {
-                alert(`【核心机制拦截！】\n\n关系突破受挫！系统已强行冻结与 [${name}] 的 [${stageCh(stage)}] 关系发展。请在右侧仪表盘查看拦截器状态！`);
+                alert(`【核心命运拦截触发！】\n\n命运的羁绊断开！你因门第门阀不符或原生家庭背景缺失，在 [${stageTranslate(stage)}] 关卡受阻。`);
             }
         }
 
-        // 快捷汉化辅助方法
-        function stageCh(stage) {
+        // 汉化辅助工具
+        function stageTranslate(stage) {
             const map = { ambiguity: "暧昧", love: "恋爱", marriage: "结婚" };
             return map[stage] || stage;
         }
 
-        function siblingCh(type) {
+        function wealthEventTranslate(ev) {
             const map = {
-                none: "无",
-                older_sister: "姐姐",
-                younger_sister: "妹妹",
-                older_brother: "哥哥",
-                younger_brother: "弟弟"
+                postgraduate: "考研成功", study_abroad: "公费留学", big_tech_offer: "大厂录用", lottery: "中彩票",
+                bankruptcy: "家庭破产", gambling: "陷入博弈", car_accident: "遭遇车祸", illness: "身患大病"
             };
-            return map[type] || type;
+            return map[ev] || ev;
         }
 
-        function eventCh(type) {
-            const map = {
-                postgraduate: "考研成功",
-                study_abroad: "公费留学",
-                big_tech_offer: "大厂录用",
-                lottery: "中彩票",
-                bankruptcy: "家庭破产",
-                gambling: "赌博",
-                car_accident: "车祸",
-                illness: "恶性疾病"
-            };
-            return map[type] || type;
+        function npcIdMap(name) {
+            const map = { "林柚心": "imp-lin", "周艺": "imp-zhou", "叶衔": "imp-ye", "沈青杉": "imp-shen" };
+            return map[name];
         }
     </script>
 </body>
